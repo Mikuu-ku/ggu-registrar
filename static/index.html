@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UA WORLDWIDE</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="announcement-bar">
+        <div class="marquee">
+            <span>Within Cebu Orders Arrives in 3-7 Business Days</span>
+            <span>Outside Cebu Orders Arrives in 5-10 Business Days</span>
+            <span>Support Hours Mon - Sun 24/7</span>
+        </div>
+    </div>
+
+    <header class="main-header">
+        <div class="header-left">
+            <img src="/static/images/logo.png" class="ua-header-logo">
+        </div>
+        <div class="header-right">
+            <a href="#" onclick="showAdmin()"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></a>
+            <a href="#"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg></a>
+        </div>
+    </header>
+
+    <nav class="sub-nav">
+        <a href="#" class="active">Home</a> <span class="divider">|</span> <a href="#">Contact Us</a>
+    </nav>
+
+    <div class="category-bar">
+        <button class="cat-btn active">ALL</button>
+        <button class="cat-btn">UA PREMIUM PLAINS</button>
+        <button class="cat-btn">UA FRENCH TERRIES</button>
+    </div>
+
+    <main id="productGrid" class="shop-grid"></main>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 id="authTitle">LOG IN</h2>
+            <input type="text" id="user" placeholder="USERNAME">
+            <input type="password" id="pass" placeholder="PASSWORD">
+            <button onclick="handleAuth()" class="btn-black">CONTINUE</button>
+            <p onclick="toggleAuth()" class="toggle-link">CREATE ACCOUNT</p>
+            <p onclick="closeModal()" class="close-x">CLOSE</p>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="admin-section" style="display:none;">
+        <input type="text" id="pName" placeholder="ITEM NAME">
+        <input type="number" id="pPrice" placeholder="PRICE">
+        <input type="text" id="pImg" placeholder="/static/images/filename.jpg">
+        <button class="btn-black" onclick="saveProduct()">UPLOAD</button>
+        <button class="logout-btn" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

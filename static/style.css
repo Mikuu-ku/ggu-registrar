@@ -1,0 +1,33 @@
+:root { --black: #000; --white: #fff; --border: #f2f2f2; }
+* { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s; }
+body { font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px; }
+
+.announcement-bar { background: var(--black); color: var(--white); padding: 10px 0; font-size: 10px; overflow: hidden; }
+.marquee { display: flex; animation: scroll 20s linear infinite; }
+@keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.marquee span { padding: 0 40px; white-space: nowrap; }
+
+.main-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; border-bottom: 1px solid var(--border); }
+.ua-header-logo { height: 45px; }
+.header-right { display: flex; gap: 20px; }
+
+.sub-nav { text-align: center; padding: 20px 0; font-size: 12px; }
+.sub-nav a { text-decoration: none; color: #000; font-weight: bold; }
+
+.category-bar { display: flex; justify-content: center; gap: 20px; padding: 15px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cat-btn { background: none; border: none; font-size: 9px; color: #bbb; cursor: pointer; }
+.cat-btn.active { color: #000; font-weight: bold; }
+
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 40px; padding: 40px 5%; }
+.product-card { text-align: left; }
+.product-card img { width: 100%; aspect-ratio: 1/1; object-fit: contain; background: #fdfdfd; }
+.product-card h3 { font-size: 11px; margin: 10px 0 5px; }
+
+.delete-btn { color: red; border: 1px solid red; background: none; padding: 5px; cursor: pointer; font-size: 9px; margin-top: 5px; margin-right: auto; display: block; }
+.modal { position: fixed; inset: 0; background: rgba(255,255,255,0.98); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { width: 300px; text-align: center; }
+input { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #ddd; }
+.btn-black { width: 100%; padding: 15px; background: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; }
+
+.admin-section { padding: 40px 5%; background: #f9f9f9; text-align: center; }
+.logout-btn { background: none; border: none; text-decoration: underline; cursor: pointer; margin-top: 10px; font-size: 10px; }
