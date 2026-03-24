@@ -5,12 +5,34 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+    networks:
+      - cloud-network
+
   mongodb:
     image: mongo:latest
+    container_name: mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - cloud-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-monitor
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - mongodb
+    networks:
+      - cloud-network
+
+networks:
+  cloud-network:
+    driver: bridge
 
 volumes:
   mongo-data:
