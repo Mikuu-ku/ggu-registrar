@@ -12,43 +12,54 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// User remains for the login system
 type User struct {
 	Username string `json:"username" bson:"username"`
 	Password string `json:"password" bson:"password"`
 }
 
-type Product struct {
-	Name     string  `json:"name" bson:"name"`
-	Price    float64 `json:"price" bson:"price"`
-	ImageURL string  `json:"image_url" bson:"image_url"`
+// Student is your new core data structure
+type Student struct {
+	ID     string  `json:"id" bson:"_id,omitempty"`
+	Name   string  `json:"name" bson:"name"`
+	Course string  `json:"course" bson:"course"`
+	Year   int     `json:"year" bson:"year"`
+	GPA    float64 `json:"gpa" bson:"gpa"`
 }
 
 func main() {
 	e := echo.New()
+
+	// Middlewares for logging and crash recovery
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// FIX: Use ctx to verify the connection
+	// Database Connection setup
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// We use the 'mongodb' service name defined in your docker-compose
 	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://mongodb:27017"))
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
 
-	// This utilizes 'ctx', satisfying the compiler
+	// Verify database connection
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		e.Logger.Fatal("Database unreachable:", err)
 	}
 
-	db := client.Database("ua_store")
-	productsColl := db.Collection("products")
+	// Updated Database and Collection names for Student Records
+	db := client.Database("school_db")
+	studentsColl := db.Collection("students")
 	usersColl := db.Collection("users")
 
+	// Static files for your frontend
 	e.Static("/static", "static")
 	e.File("/", "static/index.html")
+
+	// --- Auth Endpoints ---
 
 	e.POST("/signup", func(c echo.Context) error {
 		u := new(User)
@@ -58,7 +69,7 @@ func main() {
 		hashed, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 10)
 		u.Password = string(hashed)
 		usersColl.InsertOne(c.Request().Context(), u)
-		return c.JSON(http.StatusCreated, "Account Created")
+		return c.JSON(http.StatusCreated, "Admin Account Created")
 	})
 
 	e.POST("/login", func(c echo.Context) error {
@@ -72,23 +83,33 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]bool{"admin": true})
 	})
 
-	e.GET("/products", func(c echo.Context) error {
-		var p []Product
-		cur, _ := productsColl.Find(c.Request().Context(), map[string]interface{}{})
-		cur.All(c.Request().Context(), &p)
-		return c.JSON(http.StatusOK, p)
+	// --- Student Record Endpoints (Pivoted from Products) ---
+
+	// GET all students - This is what you will link to Grafana
+	e.GET("/students", func(c echo.Context) error {
+		var s []Student
+		cur, err := studentsColl.Find(c.Request().Context(), map[string]interface{}{})
+		if err != nil {
+			return err
+		}
+		cur.All(c.Request().Context(), &s)
+		return c.JSON(http.StatusOK, s)
 	})
 
-	e.POST("/products", func(c echo.Context) error {
-		p := new(Product)
-		c.Bind(p)
-		productsColl.InsertOne(c.Request().Context(), p)
-		return c.JSON(http.StatusCreated, p)
+	// POST a new student record
+	e.POST("/students", func(c echo.Context) error {
+		s := new(Student)
+		if err := c.Bind(s); err != nil {
+			return err
+		}
+		studentsColl.InsertOne(c.Request().Context(), s)
+		return c.JSON(http.StatusCreated, s)
 	})
 
-	e.DELETE("/products/:name", func(c echo.Context) error {
+	// DELETE a student record by name
+	e.DELETE("/students/:name", func(c echo.Context) error {
 		name := c.Param("name")
-		productsColl.DeleteOne(c.Request().Context(), map[string]string{"name": name})
+		studentsColl.DeleteOne(c.Request().Context(), map[string]string{"name": name})
 		return c.NoContent(http.StatusNoContent)
 	})
 
