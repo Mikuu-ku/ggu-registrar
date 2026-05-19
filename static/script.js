@@ -1,171 +1,75 @@
-let isLoginMode = true;
-let currentFilter = 'ALL STUDENTS';
+window.onload = load;
 
-window.onload = function() {
-    // Check if user is already logged in
-    if (localStorage.getItem('ua_session')) {
-        showUI();
-        setupFilters(); 
-        fetchStudents();
-    }
-};
+let isEditMode = false;
 
-// --- AUTHENTICATION LOGIC ---
-function toggleAuth() {
-    isLoginMode = !isLoginMode;
-    const title = document.getElementById('authTitle');
-    const btn = document.getElementById('authBtn');
-    const link = document.getElementById('toggleLink');
+async function load() {
+    const res = await fetch('/students');
+    const data = await res.json();
+    const list = document.getElementById('studentList');
 
-    title.innerText = isLoginMode ? "ADMINISTRATOR LOGIN" : "ADMIN REGISTRATION";
-    btn.innerText = isLoginMode ? "SIGN IN" : "CREATE ACCOUNT";
-    link.innerText = isLoginMode ? "NEED AN ADMIN ACCOUNT? SIGN UP" : "ALREADY HAVE AN ACCOUNT? LOG IN";
-}
-
-async function handleAuth() {
-    const user = document.getElementById('user').value;
-    const pass = document.getElementById('pass').value;
-    const path = isLoginMode ? '/login' : '/signup';
-
-    if (!user || !pass) { alert("Please fill in all fields."); return; }
-
-    const res = await fetch(path, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: user, password: pass})
-    });
-
-    if (res.ok) {
-        if (isLoginMode) {
-            localStorage.setItem('ua_session', 'true');
-            location.reload(); 
-        } else {
-            alert("ADMIN REGISTERED! Please sign in.");
-            toggleAuth();
-        }
-    } else { 
-        alert("ACCESS DENIED: Invalid credentials."); 
-    }
-}
-
-function showUI() {
-    document.getElementById('authModal').style.display = 'none';
-    document.getElementById('mainHeader').style.display = 'flex';
-    document.getElementById('subNav').style.display = 'block';
-    document.getElementById('catBar').style.display = 'flex';
-    document.getElementById('studentGrid').style.display = 'grid';
-    document.getElementById('adminPanel').style.display = 'block';
-}
-
-// --- STUDENT DATA & FILTER LOGIC ---
-function setupFilters() {
-    const buttons = document.querySelectorAll('.cat-btn');
-    buttons.forEach(btn => {
-        btn.onclick = () => {
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.innerText.trim().toUpperCase();
-            fetchStudents();
-        };
-    });
-}
-
-async function fetchStudents() {
-    try {
-        const res = await fetch('/students');
-        let data = await res.json();
-        
-        console.log("Data from server:", data); // Check F12 Console to see if data exists
-
-        if (!data || data.length === 0) {
-            document.getElementById('studentGrid').innerHTML = `
-                <p style="grid-column: 1/-1; text-align: center; color: #999; padding: 60px;">
-                    DATABASE IS EMPTY. ENROLL A STUDENT BELOW.
-                </p>`;
-            return;
-        }
-
-        // --- IMPROVED FILTERING ---
-        // We trim and uppercase both sides to ensure "BSIT" matches "bsit"
-        let filteredData = data;
-        if (currentFilter !== 'ALL STUDENTS') {
-            filteredData = data.filter(s => 
-                s.course && s.course.trim().toUpperCase() === currentFilter.trim().toUpperCase()
-            );
-        }
-
-        const grid = document.getElementById('studentGrid');
-        
-        if (filteredData.length === 0) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #999; padding: 60px;">
-                NO RECORDS FOUND FOR ${currentFilter}
-            </p>`;
-        } else {
-            grid.innerHTML = filteredData.map(s => `
-                <div class="product-card">
-                    <div class="avatar-box">🎓</div>
-                    <h3>${s.name}</h3>
-                    <p>${s.course} • Year ${s.year}</p>
-                    <div class="gpa-badge">GPA: ${s.gpa ? s.gpa.toFixed(2) : "0.00"}</div>
-                    <button onclick="deleteStudent('${s.name}')" class="delete-btn">REMOVE RECORD</button>
+    list.innerHTML = data.length === 0 
+        ? '<div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px;">No students found.</div>'
+        : data.map((s, i) => `
+            <div class="student-card" style="animation-delay: ${i * 0.08}s">
+                <div class="card-actions">
+                    <button class="action-btn edit-btn" onclick="startEdit('${s.name}', '${s.course}', ${s.year})">✎</button>
+                    <button class="action-btn del-btn" onclick="deleteStudent('${s.name}')">✕</button>
                 </div>
-            `).join('');
-        }
-    } catch (err) {
-        console.error("Fetch error:", err);
-    }
+                <h4 style="margin: 0 0 5px 0;">${s.name}</h4>
+                <p style="margin: 0; color: #64748b; font-size: 14px;">${s.course}</p>
+                <div class="badge">YEAR LEVEL ${s.year}</div>
+            </div>
+        `).join('');
 }
 
-async function saveStudent() {
-    const nameInput = document.getElementById('sName');
-    const courseInput = document.getElementById('sCourse');
-    const yearInput = document.getElementById('sYear'); // New Dropdown
-    const gpaInput = document.getElementById('sGPA');
+async function handleSubmit() {
+    const name = document.getElementById('name').value;
+    const course = document.getElementById('course').value;
+    const year = parseInt(document.getElementById('year').vlue);
+    const oldName = document.getElementById('oldName').value;
 
-    if (!nameInput.value || !courseInput.value || !yearInput.value) {
-        alert("PLEASE FILL IN ALL FIELDS.");
-        return;
-    }
+    if (!name) return alert("Please enter a name.");
 
-    const s = {
-        name: nameInput.value,
-        course: courseInput.value,
-        year: parseInt(yearInput.value),
-        gpa: parseFloat(gpaInput.value) || 0.0
-    };
+    const url = isEditMode ? `/students/${encodeURIComponent(oldName)}` : '/students';
+    const method = isEditMode ? 'PUT' : 'POST';
 
-    try {
-        const res = await fetch('/students', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify(s)
-        });
+    await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, course, year })
+    });
 
-        if (res.ok) {
-            alert("STUDENT ENROLLED SUCCESSFULLY!");
-            
-            // RESET FIELDS
-            nameInput.value = "";
-            courseInput.selectedIndex = 0;
-            yearInput.selectedIndex = 0; // Reset Year Dropdown
-            gpaInput.value = "";
-            
-            currentFilter = 'ALL STUDENTS';
-            fetchStudents();
-        }
-    } catch (err) {
-        console.error("Save failed:", err);
-    }
+    exitEditMode();
+    load();
+}
+
+function startEdit(name, course, year) {
+    isEditMode = true;
+    document.getElementById('editLabel').style.display = 'block';
+    const btn = document.getElementById('submitBtn');
+    btn.innerText = "SAVE CHANGES";
+    btn.classList.add('edit-mode');
+
+    document.getElementById('name').value = name;
+    document.getElementById('course').value = course;
+    document.getElementById('year').value = year;
+    document.getElementById('oldName').value = name;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exitEditMode() {
+    isEditMode = false;
+    document.getElementById('editLabel').style.display = 'none';
+    const btn = document.getElementById('submitBtn');
+    btn.innerText = "ENROLL";
+    btn.classList.remove('edit-mode');
+    document.getElementById('name').value = '';
+    document.getElementById('oldName').value = '';
 }
 
 async function deleteStudent(name) {
-    if(confirm(`Permanently delete ${name}?`)) {
+    if (confirm(`Remove ${name} from registrar?`)) {
         await fetch(`/students/${encodeURIComponent(name)}`, { method: 'DELETE' });
-        fetchStudents();
+        load();
     }
-}
-
-function logout() {
-    localStorage.removeItem('ua_session');
-    location.reload();
 }
