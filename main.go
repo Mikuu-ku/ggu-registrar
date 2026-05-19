@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"os" // Added to read Render environment variables
 	"time"
 
 	"github.com/labstack/echo-contrib/prometheus"
@@ -40,8 +41,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Using the URI compatible with your Docker Compose setup
-	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://mongodb:27017"))
+	// --- PRODUCTION FIX: Dynamic MongoDB Connection String ---
+	// If MONGO_URL environment variable is set (Render), use it. Otherwise, fallback to your Docker URL.
+	mongoURI := os.Getenv("MONGO_URL")
+	if mongoURI == "" {
+		mongoURI = "mongodb://mongodb:27017"
+	}
+
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
@@ -90,7 +97,6 @@ func main() {
 		if err := c.Bind(s); err != nil {
 			return c.JSON(http.StatusBadRequest, "Invalid JSON")
 		}
-		// Ensure Year is set if not provided by UI
 		if s.Year == 0 {
 			s.Year = 1
 		}
@@ -105,7 +111,13 @@ func main() {
 		return c.NoContent(http.StatusNoContent)
 	})
 
-	e.Logger.Fatal(e.Start(":8080"))
+	// --- PRODUCTION FIX: Dynamic Port Binding ---
+	// Render passes its own port via the PORT environment variable.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Local fallback
+	}
+	e.Logger.Fatal(e.Start(":" + port))
 }
 
 func seedAdmin(coll *mongo.Collection) {
